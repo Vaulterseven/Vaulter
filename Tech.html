@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tech - Vaulter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f5f0 0%, #e8e8e0 100%);
+            overflow-x: hidden;
+            cursor: none;
+        }
+        
+        /* Loading Screen */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #f5f5f0;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+        
+        #loading-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .loading-text {
+            font-size: 2.5rem;
+            font-weight: 300;
+            color: #9b9b9b;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            margin-bottom: 60px;
+            overflow: hidden;
+        }
+        
+        .loading-text span {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(100px);
+            animation: letterReveal 0.8s ease forwards;
+        }
+        
+        @keyframes letterReveal {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .loading-bar-container {
+            width: 400px;
+            height: 2px;
+            background-color: rgba(155, 155, 155, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .loading-bar {
+            height: 100%;
+            background-color: #9b9b9b;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .loading-percentage {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #9b9b9b;
+            letter-spacing: 0.2em;
+        }
+        
+        /* Main Canvas */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+        
+        #canvas-container.visible {
+            opacity: 1;
+        }
+        
+        /* Content */
+        .content-wrapper {
+            position: relative;
+            z-index: 2;
+            min-height: 100vh;
+            opacity: 0;
+            transition: opacity 1s ease 0.5s;
+            pointer-events: none;
+        }
+        
+        .content-wrapper.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        nav {
+            position: absolute;
+            top: 40px;
+            right: 60px;
+            display: flex;
+            gap: 40px;
+            z-index: 2;
+        }
+        
+        nav a {
+            color: #9b9b9b;
+            text-decoration: none;
+            font-size: 0.95rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            transition: color 0.3s ease;
+            pointer-events: auto;
+        }
+        
+        nav a:hover {
+            color: #666666;
+        }
+        
+        .tech-title {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        
+        h1 {
+           position: absolute;
+            top: -400px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 5rem;
+            font-weight: 300;
+            color: #9b9b9b;
+            letter-spacing: 0.1em;
+            animation: float 4s ease-in-out infinite;
+            text-transform: uppercase;
+            pointer-events: none;
+        }
+        
+        .tech-subtitle {
+            font-size: 1rem;
+            font-weight: 300;
+            color: #9b9b9b;
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+        }
+        
+        .grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(155, 155, 155, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(155, 155, 155, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        /* Custom Cursor */
+        .custom-cursor {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #9b9b9b;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transition: transform 0.15s ease;
+            opacity: 0;
+        }
+        
+        .custom-cursor.visible {
+            opacity: 1;
+        }
+        
+        .custom-cursor.hover {
+            transform: scale(1.5);
+            background-color: rgba(155, 155, 155, 0.1);
+        }
+        
+        .cursor-trail {
+            position: fixed;
+            width: 6px;
+            height: 6px;
+            background-color: #9b9b9b;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9998;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .cursor-trail.visible {
+            opacity: 0.3;
+        }
+        
+        /* Tech Info Panel */
+        .tech-info {
+            position: absolute;
+            bottom: 80px;
+            left: 60px;
+            color: #9b9b9b;
+            font-size: 0.85rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            line-height: 2;
+        }
+        
+        .tech-info span {
+            display: block;
+            opacity: 0.5;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                cursor: auto;
+            }
+            
+            h1 {
+                font-size: 3rem;
+            }
+            
+            nav {
+                top: 30px;
+                right: 30px;
+                gap: 20px;
+                flex-direction: column;
+                align-items: flex-end;
+            }
+            
+            .custom-cursor, .cursor-trail {
+                display: none;
+            }
+            
+            .tech-info {
+                left: 30px;
+                bottom: 60px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-text">
+            <span style="animation-delay: 0s">T</span><span style="animation-delay: 0.05s">E</span><span style="animation-delay: 0.1s">C</span><span style="animation-delay: 0.15s">H</span>
+        </div>
+        <div class="loading-bar-container">
+            <div class="loading-bar" id="loading-bar"></div>
+        </div>
+        <div class="loading-percentage" id="loading-percentage">0%</div>
+    </div>
+
+    <div class="grid-overlay"></div>
+    <div id="canvas-container"></div>
+    <div class="custom-cursor"></div>
+    <div class="cursor-trail"></div>
+    
+    <div class="content-wrapper">
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="about.html">About</a>
+            <a href="distribution.html">Distribution</a>
+            <a href="tech.html">Tech</a>
+        </nav>
+        
+        <div class="tech-title">
+            <h1>Vaulter</h1>
+
+        </div>
+    
+            <span>Real-time Pro
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Loading Animation
+        const loadingBar = document.getElementById('loading-bar');
+        const loadingPercentage = document.getElementById('loading-percentage');
+        const loadingScreen = document.getElementById('loading-screen');
+        const canvasContainer = document.getElementById('canvas-container');
+        const contentWrapper = document.querySelector('.content-wrapper');
+        const cursor = document.querySelector('.custom-cursor');
+        const cursorTrail = document.querySelector('.cursor-trail');
+
+        let loadingProgress = 0;
+
+        function updateLoadingBar(progress) {
+            loadingProgress = Math.min(progress, 100);
+            loadingBar.style.width = loadingProgress + '%';
+            loadingPercentage.textContent = Math.floor(loadingProgress) + '%';
+            
+            if (loadingProgress >= 100) {
+                setTimeout(() => {
+                    loadingScreen.classList.add('hidden');
+                    canvasContainer.classList.add('visible');
+                    contentWrapper.classList.add('visible');
+                    cursor.classList.add('visible');
+                    cursorTrail.classList.add('visible');
+                }, 300);
+            }
+        }
+
+        // Smooth cursor with trailing effect
+        let mouseX = 0, mouseY = 0;
+        let cursorX = 0, cursorY = 0;
+        let trailX = 0, trailY = 0;
+        
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        function updateCursor() {
+            cursorX += (mouseX - cursorX) * 0.15;
+            cursorY += (mouseY - cursorY) * 0.15;
+            trailX += (mouseX - trailX) * 0.05;
+            trailY += (mouseY - trailY) * 0.05;
+            
+            cursor.style.left = cursorX - 10 + 'px';
+            cursor.style.top = cursorY - 10 + 'px';
+            cursorTrail.style.left = trailX - 3 + 'px';
+            cursorTrail.style.top = trailY - 3 + 'px';
+            
+            requestAnimationFrame(updateCursor);
+        }
+
+        updateCursor();
+
+        const hoverElements = document.querySelectorAll('a, button');
+        hoverElements.forEach(el => {
+            el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+            el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+        });
+
+        // Three.js Scene Setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x000000, 0);
+        canvasContainer.appendChild(renderer.domElement);
+        
+        camera.position.z = 8;
+        camera.position.y = 2;
+
+        // Create material
+        const material = new THREE.MeshBasicMaterial({
+            color: 0x9b9b9b,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.4
+        });
+
+        // Create Humanoid Robot
+        const robot = new THREE.Group();
+
+        // Head
+        const head = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.8), material);
+        head.position.y = 2.4;
+        robot.add(head);
+
+        // Eyes
+        const eyeLeft = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), material);
+        eyeLeft.position.set(-0.2, 2.5, 0.4);
+        robot.add(eyeLeft);
+
+        const eyeRight = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), material);
+        eyeRight.position.set(0.2, 2.5, 0.4);
+        robot.add(eyeRight);
+
+        // Neck
+        const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.4, 8), material);
+        neck.position.y = 1.9;
+        robot.add(neck);
+
+        // Torso
+        const torso = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.5, 0.6), material);
+        torso.position.y = 1;
+        robot.add(torso);
+
+        // Core/Chest detail
+        const core = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.05, 8, 16), material);
+        core.position.set(0, 1.2, 0.3);
+        robot.add(core);
+
+        // Left Upper Arm
+        const leftUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.8, 8), material);
+        leftUpperArm.position.set(-0.8, 1.3, 0);
+        robot.add(leftUpperArm);
+
+        // Left Lower Arm
+        const leftLowerArm = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.8, 8), material);
+        leftLowerArm.position.set(-0.8, 0.5, 0);
+        robot.add(leftLowerArm);
+
+        // Left Hand
+        const leftHand = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8), material);
+        leftHand.position.set(-0.8, 0, 0);
+        robot.add(leftHand);
+
+        // Right Upper Arm
+        const rightUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.8, 8), material);
+        rightUpperArm.position.set(0.8, 1.3, 0);
+        robot.add(rightUpperArm);
+
+        // Right Lower Arm
+        const rightLowerArm = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.8, 8), material);
+        rightLowerArm.position.set(0.8, 0.5, 0);
+        robot.add(rightLowerArm);
+
+        // Right Hand
+        const rightHand = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8), material);
+        rightHand.position.set(0.8, 0, 0);
+        robot.add(rightHand);
+
+        // Pelvis
+        const pelvis = new THREE.Mesh(new THREE.BoxGeometry(1, 0.4, 0.5), material);
+        pelvis.position.y = 0.2;
+        robot.add(pelvis);
+
+        // Left Upper Leg
+        const leftUpperLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.15, 1, 8), material);
+        leftUpperLeg.position.set(-0.3, -0.5, 0);
+        robot.add(leftUpperLeg);
+
+        // Left Lower Leg
+        const leftLowerLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.12, 1, 8), material);
+        leftLowerLeg.position.set(-0.3, -1.5, 0);
+        robot.add(leftLowerLeg);
+
+        // Left Foot
+        const leftFoot = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.15, 0.5), material);
+        leftFoot.position.set(-0.3, -2.1, 0.1);
+        robot.add(leftFoot);
+
+        // Right Upper Leg
+        const rightUpperLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.15, 1, 8), material);
+        rightUpperLeg.position.set(0.3, -0.5, 0);
+        robot.add(rightUpperLeg);
+
+        // Right Lower Leg
+        const rightLowerLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.12, 1, 8), material);
+        rightLowerLeg.position.set(0.3, -1.5, 0);
+        robot.add(rightLowerLeg);
+
+        // Right Foot
+        const rightFoot = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.15, 0.5), material);
+        rightFoot.position.set(0.3, -2.1, 0.1);
+        robot.add(rightFoot);
+
+        // Position robot
+        robot.position.y = 0.5;
+        scene.add(robot);
+
+        // Create floating tech particles
+        const particles = [];
+        for (let i = 0; i < 100; i++) {
+            const particleGeo = new THREE.OctahedronGeometry(0.05, 0);
+            const particleMat = new THREE.MeshBasicMaterial({
+                color: 0x9b9b9b,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.2
+            });
+            const particle = new THREE.Mesh(particleGeo, particleMat);
+            
+            particle.position.x = (Math.random() - 0.5) * 20;
+            particle.position.y = (Math.random() - 0.5) * 15;
+            particle.position.z = (Math.random() - 0.5) * 15;
+            
+            particle.userData.velocity = {
+                x: (Math.random() - 0.5) * 0.02,
+                y: (Math.random() - 0.5) * 0.02,
+                z: (Math.random() - 0.5) * 0.02
+            };
+            particle.userData.rotationSpeed = (Math.random() - 0.5) * 0.05;
+            
+            particles.push(particle);
+            scene.add(particle);
+        }
+
+        // Create data streams
+        const dataStreams = [];
+        for (let i = 0; i < 20; i++) {
+            const streamGeo = new THREE.BoxGeometry(0.02, 0.5, 0.02);
+            const streamMat = new THREE.MeshBasicMaterial({
+                color: 0x9b9b9b,
+                transparent: true,
+                opacity: 0.3
+            });
+            const stream = new THREE.Mesh(streamGeo, streamMat);
+            
+            stream.position.x = (Math.random() - 0.5) * 15;
+            stream.position.y = Math.random() * 10 - 5;
+            stream.position.z = (Math.random() - 0.5) * 10;
+            
+            stream.userData.speed = 0.05 + Math.random() * 0.05;
+            
+            dataStreams.push(stream);
+            scene.add(stream);
+        }
+
+        // Loading progress
+        let componentsLoaded = 0;
+        const totalComponents = 100;
+
+        const loadInterval = setInterval(() => {
+            componentsLoaded += 5;
+            updateLoadingBar((componentsLoaded / totalComponents) * 100);
+            
+            if (componentsLoaded >= totalComponents) {
+                clearInterval(loadInterval);
+            }
+        }, 40);
+
+        // Mouse interaction
+        const mouse = new THREE.Vector2();
+        const targetMouse = new THREE.Vector2();
+        
+        window.addEventListener('mousemove', (event) => {
+            targetMouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            targetMouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        // Animation variables for humanoid movement
+        let walkCycle = 0;
+        let breatheCycle = 0;
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            mouse.x += (targetMouse.x - mouse.x) * 0.05;
+            mouse.y += (targetMouse.y - mouse.y) * 0.05;
+            
+            const time = Date.now() * 0.001;
+            
+            // Robot follows mouse
+            robot.rotation.y = mouse.x * 0.3;
+            head.rotation.y = mouse.x * 0.2;
+            head.rotation.x = -mouse.y * 0.2;
+            
+            // Walking animation
+            walkCycle += 0.02;
+            
+            // Legs walking
+            leftUpperLeg.rotation.x = Math.sin(walkCycle) * 0.3;
+            rightUpperLeg.rotation.x = Math.sin(walkCycle + Math.PI) * 0.3;
+            leftLowerLeg.rotation.x = Math.max(0, Math.sin(walkCycle) * 0.4);
+            rightLowerLeg.rotation.x = Math.max(0, Math.sin(walkCycle + Math.PI) * 0.4);
+            
+            // Arms swinging
+            leftUpperArm.rotation.x = Math.sin(walkCycle + Math.PI) * 0.2;
+            rightUpperArm.rotation.x = Math.sin(walkCycle) * 0.2;
+            leftLowerArm.rotation.x = Math.sin(walkCycle + Math.PI) * 0.15;
+            rightLowerArm.rotation.x = Math.sin(walkCycle) * 0.15;
+            
+            // Breathing/idle motion
+            breatheCycle += 0.01;
+            torso.scale.y = 1 + Math.sin(breatheCycle) * 0.02;
+            torso.position.y = 1 + Math.sin(breatheCycle) * 0.02;
+            
+            // Robot slight bounce
+            robot.position.y = 0.5 + Math.abs(Math.sin(walkCycle)) * 0.1;
+            
+            // Core rotation
+            core.rotation.z = time * 0.5;
+            
+            // Eyes following mouse
+            eyeLeft.position.z = 0.4 + mouse.x * 0.05;
+            eyeLeft.position.x = -0.2 + mouse.x * 0.05;
+            eyeRight.position.z = 0.4 + mouse.x * 0.05;
+            eyeRight.position.x = 0.2 + mouse.x * 0.05;
+            
+            // Particles
+            particles.forEach(particle => {
+                particle.position.x += particle.userData.velocity.x;
+                particle.position.y += particle.userData.velocity.y;
+                particle.position.z += particle.userData.velocity.z;
+                particle.rotation.y += particle.userData.rotationSpeed;
+                
+                if (Math.abs(particle.position.x) > 10) particle.position.x *= -1;
+                if (Math.abs(particle.position.y) > 7) particle.position.y *= -1;
+                if (Math.abs(particle.position.z) > 7) particle.position.z *= -1;
+            });
+            
+            // Data streams
+            dataStreams.forEach(stream => {
+                stream.position.y += stream.userData.speed;
+                if (stream.position.y > 5) stream.position.y = -5;
+            });
+            
+            // Camera slight movement
+            camera.position.x = Math.sin(time * 0.2) * 0.3;
+            camera.lookAt(new THREE.Vector3(0, 1, 0));
+            
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Resize handler
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
